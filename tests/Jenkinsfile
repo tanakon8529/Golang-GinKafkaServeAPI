@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+
+    environment {
+        PROJECT_DIR = '/<YOUR_PATH>/Golang-GinKafkaServeAPI'
+        DOCKER_COMPOSE_FILE = 'docker-compose.yml'
+    }
+
+    stages {
+        stage('Clone repository') {
+            steps {
+                script {
+                    // Assuming Git is configured in Jenkins
+                    git 'https://your-repository-url.git'
+                }
+            }
+        }
+
+        stage('Build and run with Docker Compose') {
+            steps {
+                script {
+                    sh "docker-compose -f ${DOCKER_COMPOSE_FILE} up --build"
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                // Check if the required containers are up and running
+                def isServiceRunning = sh(script: "docker-compose -f ${DOCKER_COMPOSE_FILE} ps -q ginapi-gateway | wc -l", returnStdout: true).trim()
+                if (isServiceRunning == "1") {
+                    // Run tests only if the container is running
+                    echo "Container is up, running tests..."
+                    try {
+                        sh 'python3 ${PROJECT_DIR}/tests/api_test.py'
+                    } catch (Exception e) {
+                        echo "Tests failed: ${e.getMessage()}"
+                        // If tests fail, stop and remove containers, networks, volumes, and images created by `up`.
+                        echo "Stopping services due to test failure..."
+                        sh "docker-compose -f ${DOCKER_COMPOSE_FILE} down --rmi all -v"
+                        throw e // Rethrow to ensure the build is marked as failed
+                    }
+                } else {
+                    echo "Service is not running, skipping tests."
+                }
+            }
+
+            always {
+                // Print running containers
+                sh 'docker ps'
+
+                // Print available volumes
+                sh 'docker volume ls'
+            }
+        }
+    }
+}

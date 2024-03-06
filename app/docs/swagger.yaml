@@ -1,0 +1,92 @@
+definitions:
+  models.KafkaRequest:
+    properties:
+      message:
+        type: string
+      topic:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /auth:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return token
+      parameters:
+      - description: client-id
+        in: header
+        name: client-id
+        required: true
+        type: string
+      - description: client-secret
+        in: header
+        name: client-secret
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Authenticate
+      tags:
+      - auth
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Get the health status of the API
+      parameters:
+      - description: token
+        in: header
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - health
+  /kafka:
+    post:
+      consumes:
+      - application/json
+      description: Send a message to a Kafka topic
+      parameters:
+      - description: token
+        in: header
+        name: token
+        required: true
+        type: string
+      - description: topic message
+        in: body
+        name: KafkaRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.KafkaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Send message to Kafka
+      tags:
+      - kafka
+swagger: "2.0"
